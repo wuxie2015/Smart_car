@@ -1,0 +1,114 @@
+void Getordinarydata()
+{
+    char i,j;
+    ADdatahis[0][0]=ADdatahis[0][0]*100/ADdatamax0;   //归一化：每个传感器的值除以其最大值作百分比  
+    ADdatahis[0][1]=ADdatahis[0][1]*100/ADdatamax1;   
+    ADdatahis[0][2]=ADdatahis[0][2]*100/ADdatamax2;  
+    ADdatahis[0][3]=ADdatahis[0][3]*100/ADdatamax3; 
+    ADdatahis[0][4]=ADdatahis[0][4]*100/ADdatamax4; 
+    ADdatahis[0][5]=ADdatahis[0][5]*100/ADdatamax5; 
+    ADdatahis[0][6]=ADdatahis[0][6]*100/ADdatamax6; 
+    ADdatahis[0][7]=ADdatahis[0][7]*100/ADdatamax7;    
+    for(i=HISTORYNUM;i>1;i--) 
+      for(j=FRONTNUM;j>=0;j--)
+        ADdatahis[i-1][j]=ADdatahis[i-2][j];//历史数据前移一位
+    for(j=0;j<FRONTNUM;j++)
+       ADdatahis[0][j]=ADdatacur[j]; 
+}
+
+
+
+void Surelocationtest()
+{
+  int loctemp[8];
+  loctemp[0]=ADdata[0]*-50; 
+  loctemp[1]=ADdata[1]*-40; 
+  loctemp[2]=ADdata[2]*-20; 
+  loctemp[3]=ADdata[3]*-10;  
+  loctemp[4]=ADdata[4]*10;
+  loctemp[5]=ADdata[5]*20; 
+  loctemp[6]=ADdata[6]*40; 
+  loctemp[7]=ADdata[7]*50;//将AD值作为位置的权重
+/*  loctemp[0]=ADdata[0]*-10; 
+  loctemp[1]=ADdata[1]*-8; 
+  loctemp[2]=ADdata[2]*-4; 
+  loctemp[3]=ADdata[3]*-2;  
+  loctemp[4]=ADdata[4]*2;
+  loctemp[5]=ADdata[5]*4; 
+  loctemp[6]=ADdata[6]*8; 
+  loctemp[7]=ADdata[7]*10;*/
+  location=Average(loctemp,7);
+  if(abs(location)<=5)
+     location=0;
+  return(location);
+}
+
+#define speedmax 25//最高速度
+#define speedmin 12//最低速度
+int modeflag;//赛道模式
+speedwanted()
+{
+  char i,j;
+  int curva,curvb;
+  int speedxiuzheng,speedxiuzhenglast,speedwanted;
+  int leftcountb,rightcountb,centracountb;//弯道标志
+  int forecast[15];
+  if(location>5)
+     forecast[0]=1;//右弯道
+  else if(location<-5)
+      forecast[0]=-1;//左弯道
+  else forecast[0]=0;//直道
+  for(i=0;i<5;i++)
+   {
+    switch(forecast[i])
+      {
+        case 1: rightcounta++; break;
+        case -1: leftcounta++; break;
+        case 0: centracounta++; break;
+      }
+   }
+  if(rightcounta>3&&forecast[0]=1) 
+     curva=1;
+  if(leftcounta>3&&forecast[0]=-1) 
+     curva=-1;
+  if(centracounta>3&&forecast[0]=0)
+     curva=0;
+  for(j=5;i<15;i++)
+   {
+    switch(forecast[i])
+      {
+        case 1: rightcountb++; break;
+        case -1: leftcountb++; break;
+        case 0: centracountb++; break;
+      }
+   }
+  if(rightcountb>4&&forecast[5]=1) 
+     curvb=1;
+  if(leftcountb>4&&forecast[5]=-1) 
+     curvb=-1;
+  if(centracountb>6&&forecast[5]=0)
+     curvb=0;
+  if(curvb==0&&curva==1)//直道进弯道
+     {speedxiuzheng=-5; modeflag=1;}
+  else if((curvb-curva)==0)//在弯道
+     {speedxiuzheng=1; modeflag=2;}
+  else if(curvb==0&&curva==0)//在直道
+     {speedxiuzheng=2; modeflag=3;}
+  else if(abs(curvb-curva)==2)//弯道换方向
+     {speedxiuzheng=-8; modeflag=4;}
+  else if(curvb==1&&curva==0)//弯道进直道
+     {speedxiuzheng=2; modeflag=5;}
+  else speedxiuzheng=speedxiuzhenglast;
+  speedxiuzhenglast=speedxiuzheng;
+  speedwanted=LINE_V+speedxiuzheng;
+  if(speedwanted>speedmax)
+    speedwanted=speedmax;
+  if(speedwanted<speedmin)
+    speedwanted=speedmin;
+  Xianshi(modeflag);
+  return(speedxiuzheng);
+      
+}
+整定参数：
+speedxiuzheng
+ADdatamax
